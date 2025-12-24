@@ -35,4 +35,9 @@ debug: kernel.elf
 clean:
 	rm -f *.o kernel.elf
 
-.PHONY: all run run-vga debug clean
+move-src:
+	@echo "Moving source files to src/ folder..."
+	@find . -maxdepth 1 -type f \( -name "*.c" -o -name "*.h" -o -name "*.S" -o -name "*.ld" \) ! -name "Readme.md" ! -name "LICENSE" ! -name "Makefile" -exec mv {} src/ \;
+	@echo "Source files moved to src/ folder"
+
+.PHONY: all run run-vga debug clean move-src
