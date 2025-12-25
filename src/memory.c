@@ -62,4 +62,5 @@ void heap_free(void* ptr) {
             curr = curr->next;
         }
     }
+    // Now we will start deallocating from the end of the heap
 }
