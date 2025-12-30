@@ -17,41 +17,44 @@ void kmain(void) {
     /* Initialize memory manager */
     memory_init();
 
-    /* Test stack allocation */
-    void* stack_ptr = stack_alloc(64);
-    if (stack_ptr) {
-        serial_puts("Stack allocation successful.\n");
-    } else {
-        serial_puts("Stack allocation failed!\n");
-    }
+    // stress test
+    stress_test_memory();
 
-    /* Test heap allocation */
-    void* heap_ptr = heap_alloc(128);
-    if (heap_ptr) {
-        serial_puts("Heap allocation successful.\n");
-    } else {
-        serial_puts("Heap allocation failed!\n");
-    }
+    // /* Test stack allocation */
+    // void* stack_ptr = stack_alloc(64);
+    // if (stack_ptr) {
+    //     serial_puts("Stack allocation successful.\n");
+    // } else {
+    //     serial_puts("Stack allocation failed!\n");
+    // }
 
-    /* Test heap free */
-    heap_free(heap_ptr);
-    serial_puts("Heap memory freed.\n");
+    // /* Test heap allocation */
+    // void* heap_ptr = heap_alloc(128);
+    // if (heap_ptr) {
+    //     serial_puts("Heap allocation successful.\n");
+    // } else {
+    //     serial_puts("Heap allocation failed!\n");
+    // }
 
-    /* Test heap re-allocation */
-    void* heap_ptr2 = heap_alloc(128);
-    if (heap_ptr2) {
-        serial_puts("Heap re-allocation successful.\n");
-    } else {
-        serial_puts("Heap re-allocation failed!\n");
-    }
+    // /* Test heap free */
+    // heap_free(heap_ptr);
+    // serial_puts("Heap memory freed.\n");
 
-    /* Test stack allocation and deallocation */
-    void* s_ptr = stack_alloc(32);
-    if (s_ptr) {
-        serial_puts("Stack allocated 32 bytes.\n");
-        stack_free(32);
-        serial_puts("Stack deallocated 32 bytes.\n");
-    }
+    // /* Test heap re-allocation */
+    // void* heap_ptr2 = heap_alloc(128);
+    // if (heap_ptr2) {
+    //     serial_puts("Heap re-allocation successful.\n");
+    // } else {
+    //     serial_puts("Heap re-allocation failed!\n");
+    // }
+
+    // /* Test stack allocation and deallocation */
+    // void* s_ptr = stack_alloc(32);
+    // if (s_ptr) {
+    //     serial_puts("Stack allocated 32 bytes.\n");
+    //     stack_free(32);
+    //     serial_puts("Stack deallocated 32 bytes.\n");
+    // }
 
     /* Print welcome message */
     serial_puts("\n");

@@ -9,6 +9,9 @@
 extern uint8_t stack[STACK_SIZE];
 extern uint8_t heap[HEAP_SIZE];
 
+//stress test
+void stress_test_memory(void);
+
 // Stack allocation
 void* stack_alloc(size_t size);
 void stack_free(size_t size);
