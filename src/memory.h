@@ -11,6 +11,7 @@ extern uint8_t heap[HEAP_SIZE];
 
 // Stack allocation
 void* stack_alloc(size_t size);
+void stack_free(size_t size);
 
 // Heap allocation
 void* heap_alloc(size_t size);

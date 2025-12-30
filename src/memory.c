@@ -24,6 +24,16 @@ void* stack_alloc(size_t size) {
     return ptr;
 }
 
+//stack deallocation
+void stack_free(size_t size) {
+    if (size > stack_top) {
+        stack_top = 0;
+    }
+    else {
+        stack_top -= size;
+    }
+}
+
 // First-fit heap allocation
 void* heap_alloc(size_t size) {
     MemBlock* curr = heap_head;
@@ -58,7 +68,8 @@ void heap_free(void* ptr) {
         if (curr->free && curr->next->free) {
             curr->size += sizeof(MemBlock) + curr->next->size;
             curr->next = curr->next->next;
-        } else {
+        }
+        else {
             curr = curr->next;
         }
     }
