@@ -59,10 +59,18 @@ void* heap_alloc(size_t size) {
 // Free heap block
 void heap_free(void* ptr) {
     if (!ptr) return;
+
+    // Locate the header exactly like the original code 
     MemBlock* block = (MemBlock*)((uint8_t*)ptr - sizeof(MemBlock));
     block->free = 1;
 
-    // Coalesce adjacent free blocks
+    //Forward Merge
+    if (block->next && block->next->free) {
+        block->size += sizeof(MemBlock) + block->next->size;
+        block->next = block->next->next;
+    }
+
+    //Global Coalesce 
     MemBlock* curr = heap_head;
     while (curr && curr->next) {
         if (curr->free && curr->next->free) {
@@ -70,6 +78,9 @@ void heap_free(void* ptr) {
             curr->next = curr->next->next;
         }
         else {
+            // Since memory addresses increase, if 'curr' has passed 'block',
+            // and no more adjacent free blocks were found, we can stop.
+            if (curr > block) break;
             curr = curr->next;
         }
     }
