@@ -17,6 +17,9 @@ void kmain(void) {
     /* Initialize memory manager */
     memory_init();
 
+    // stress test
+    stress_test_memory();
+
     // /* Test stack allocation */
     // void* stack_ptr = stack_alloc(64);
     // if (stack_ptr) {
@@ -43,6 +46,14 @@ void kmain(void) {
     //     serial_puts("Heap re-allocation successful.\n");
     // } else {
     //     serial_puts("Heap re-allocation failed!\n");
+    // }
+
+    // /* Test stack allocation and deallocation */
+    // void* s_ptr = stack_alloc(32);
+    // if (s_ptr) {
+    //     serial_puts("Stack allocated 32 bytes.\n");
+    //     stack_free(32);
+    //     serial_puts("Stack deallocated 32 bytes.\n");
     // }
 
     /* Print welcome message */
