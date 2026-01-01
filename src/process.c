@@ -133,29 +133,19 @@ pid32 create_process(int priority)
 // Set a process as currently running
 void set_current(pid32 pid)
 {
-    int slot;
+    int slot = find_slot(pid);
+    int old_slot;
 
-    // Find slot by pid
-    for (slot = 0; slot < NPROC; slot++)
-    {
-        if (proctab[slot].pid == pid)
-            break;
-    }
-
-    if (slot == NPROC)
+    if (slot == -1)
         return; // Not found
 
     // Move old current back to READY
     if (currpid != -1)
     {
-        int old_slot;
-        for (old_slot = 0; old_slot < NPROC; old_slot++)
+        old_slot = find_slot(currpid);
+        if (old_slot != -1 && proctab[old_slot].prstate == PR_CURR)
         {
-            if (proctab[old_slot].pid == currpid && proctab[old_slot].prstate == PR_CURR)
-            {
-                proctab[old_slot].prstate = PR_READY;
-                break;
-            }
+            proctab[old_slot].prstate = PR_READY;
         }
     }
 
@@ -166,22 +156,18 @@ void set_current(pid32 pid)
 // Terminate a process
 int terminate_process(pid32 pid)
 {
-    int slot;
+    int slot = find_slot(pid);
     int i;
     queue_t temp;
+    int state;
 
-    // Find slot by pid
-    for (slot = 0; slot < NPROC; slot++)
-    {
-        if (proctab[slot].pid == pid)
-            break;
-    }
-
-    if (slot == NPROC)
+    if (slot == -1)
         return -1; // Not found
 
+    state = get_process_state(pid);
+
     // Remove from ready queue if present
-    if (proctab[slot].prstate == PR_READY)
+    if (state == PR_READY)
     {
         // Rebuild queue without this process
         temp.head = -1;
@@ -211,4 +197,73 @@ int terminate_process(pid32 pid)
         currpid = -1;
 
     return 0;
+}
+
+/* ============= UTILITY/ACCESSOR FUNCTIONS ============= */
+
+// Get current process ID
+pid32 getpid(void)
+{
+    return currpid;
+}
+
+// Find process table slot index by PID
+int find_slot(pid32 pid)
+{
+    int i;
+    for (i = 0; i < NPROC; i++)
+    {
+        if (proctab[i].pid == pid)
+            return i;
+    }
+    return -1;  // Not found
+}
+
+// Get process state
+int get_process_state(pid32 pid)
+{
+    int slot = find_slot(pid);
+    if (slot == -1)
+        return -1;  // Not found
+    return proctab[slot].prstate;
+}
+
+// Get process priority
+int get_process_priority(pid32 pid)
+{
+    int slot = find_slot(pid);
+    if (slot == -1)
+        return -1;  // Not found
+    return proctab[slot].prprio;
+}
+
+// Check if PID is valid (process exists and is not free)
+int is_valid_pid(pid32 pid)
+{
+    int slot = find_slot(pid);
+    if (slot == -1)
+        return 0;  // Not found
+    return (proctab[slot].prstate != PR_FREE);
+}
+
+// Get process stack base
+char* get_stack_base(pid32 pid)
+{
+    int slot = find_slot(pid);
+    if (slot == -1)
+        return NULL;  // Not found
+    return proctab[slot].prstkbase;
+}
+
+// Get number of ready processes in queue
+int get_num_ready(void)
+{
+    int count = 0;
+    int slot = readylist.head;
+    while (slot != -1)
+    {
+        count++;
+        slot = proctab[slot].next;
+    }
+    return count;
 }
