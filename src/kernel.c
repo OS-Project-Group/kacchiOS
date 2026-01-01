@@ -239,11 +239,15 @@ void kmain(void)
     serial_puts("Test IPC-6 (Message Content): ");
     serial_puts(ipc_test6 ? "PASS\n" : "FAIL\n");
 
-    /* Simulate receiver clearing message */
-    proctab[receiver_slot].has_msg = 0;
-    int msg_cleared = !proctab[receiver_slot].has_msg;
-    int ipc_test7 = msg_cleared ? 1 : 0;
-    serial_puts("Test IPC-7 (Message Cleared): ");
+    /* Now test receive() function with src_pid parameter */
+    /* First reset the message and set receiver as current */
+    proctab[receiver_slot].has_msg = 1;  /* Reset has_msg */
+    set_current(receiver);  /* Set receiver as current process */
+    
+    char rcv_buffer[128];
+    int rcv_result = receive(sender, rcv_buffer, 128);
+    int ipc_test7 = (rcv_result == 10) ? 1 : 0;
+    serial_puts("Test IPC-7 (Receive with Sender Check): ");
     serial_puts(ipc_test7 ? "PASS\n" : "FAIL\n");
 
     /* Overall IPC result */
