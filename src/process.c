@@ -134,19 +134,36 @@ pid32 create_process(int priority)
 void set_current(pid32 pid)
 {
     int slot = find_slot(pid);
-    int old_slot;
+    int old_slot, i;
+    queue_t temp;
 
     if (slot == -1)
         return; // Not found
 
-    // Move old current back to READY
+    // Move old current back to READY and add to ready queue
     if (currpid != -1)
     {
         old_slot = find_slot(currpid);
         if (old_slot != -1 && proctab[old_slot].prstate == PR_CURR)
         {
             proctab[old_slot].prstate = PR_READY;
+            q_insert(old_slot, &readylist);
         }
+    }
+
+    // Remove new current from ready queue
+    if (proctab[slot].prstate == PR_READY)
+    {
+        // Rebuild queue without this process
+        temp.head = -1;
+        temp.tail = -1;
+        while (!q_empty(&readylist))
+        {
+            i = q_remove(&readylist);
+            if (i != slot)
+                q_insert(i, &temp);
+        }
+        readylist = temp;
     }
 
     proctab[slot].prstate = PR_CURR;

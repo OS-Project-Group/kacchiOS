@@ -70,69 +70,122 @@ void kmain(void)
     serial_puts("Memory and Process Manager initialized.\n\n");
 
     /* Simple process creation test */
-    serial_puts("--- Process Manager Test ---\n\n");
     
-    serial_puts("[1] Testing Process Table Creation...\n");
-    serial_puts("    Initialized process table: NPROC=8, All slots FREE\n\n");
-
-    serial_puts("[2] Testing Process Creation...\n");
+    /* Test 1: Create processes */
+    int test1_pass = 1;
     pid32 p1 = create_process(1);
-    if (p1 != -1) {
-        serial_puts("    Process 1 created\n");
-        serial_puts("    - PID: 1, State: READY, Slot: 1\n");
-        serial_puts("    - Stack: 512 bytes allocated\n");
-    } else {
-        serial_puts("    Failed to create process 1\n");
-    }
-
     pid32 p2 = create_process(2);
-    if (p2 != -1) {
-        serial_puts("    Process 2 created\n");
-        serial_puts("    - PID: 2, State: READY, Slot: 2\n");
-        serial_puts("    - Stack: 512 bytes allocated\n");
-    } else {
-        serial_puts("    Failed to create process 2\n");
-    }
-
     pid32 p3 = create_process(3);
-    if (p3 != -1) {
-        serial_puts("    Process 3 created\n");
-        serial_puts("    - PID: 3, State: READY, Slot: 3\n");
-        serial_puts("    - Stack: 512 bytes allocated\n");
-    } else {
-        serial_puts("    Failed to create process 3\n");
-    }
     
-    serial_puts("    Ready Queue: [1] -> [2] -> [3]\n\n");
+    if (p1 == -1 || p2 == -1 || p3 == -1)
+        test1_pass = 0;
 
-    serial_puts("[3] Testing State Transition (READY -> RUNNING)...\n");
+    /* Test 2: Verify process states using utility functions */
+    int test2_pass = 1;
+    if (get_process_state(p1) != 1)  // PR_READY = 1
+        test2_pass = 0;
+    if (get_process_state(p2) != 1)
+        test2_pass = 0;
+    if (get_process_state(p3) != 1)
+        test2_pass = 0;
+
+    /* Test 3: Verify process priorities */
+    int test3_pass = 1;
+    if (get_process_priority(p1) != 1)
+        test3_pass = 0;
+    if (get_process_priority(p2) != 2)
+        test3_pass = 0;
+    if (get_process_priority(p3) != 3)
+        test3_pass = 0;
+
+    /* Test 4: Verify ready queue count */
+    int test4_pass = (get_num_ready() == 3) ? 1 : 0;
+
+    /* Test 5: Verify valid PIDs */
+    int test5_pass = 1;
+    if (!is_valid_pid(p1) || !is_valid_pid(p2) || !is_valid_pid(p3))
+        test5_pass = 0;
+
+    /* Test 6: State transition (READY -> RUNNING) */
+    int test6_pass = 1;
     pid32 next = get_next_ready();
-    if (next != -1) {
-        set_current(next);
-        serial_puts("    Process 1 state: READY -> RUNNING\n");
-        serial_puts("    Current process (currpid): 1\n");
-        serial_puts("    Ready Queue: [2] -> [3]\n\n");
+    if (next == -1)
+        test6_pass = 0;
+    else {
+        /* next is actually a slot index, need to convert to PID */
+        int next_slot = next;
+        pid32 next_pid = proctab[next_slot].pid;
+        set_current(next_pid);
+        if (get_process_state(p1) != 2)  // PR_CURR = 2
+            test6_pass = 0;
+        if (getpid() != p1)
+            test6_pass = 0;
     }
 
-    serial_puts("[4] Testing Process Termination...\n");
-    if (terminate_process(p1) == 0) {
-        serial_puts("    Process 1 terminated\n");
-        serial_puts("    - State: RUNNING -> FREE\n");
-        serial_puts("    - Stack memory freed\n");
-        serial_puts("    - Removed from ready queue\n");
-        serial_puts("    Ready Queue: [2] -> [3]\n\n");
-    } else {
-        serial_puts("    Failed to terminate process 1\n\n");
-    }
+    /* Test 7: Ready queue after transition */
+    int test7_pass = (get_num_ready() == 2) ? 1 : 0;
 
-    serial_puts("[5] Final State:\n");
-    serial_puts("    Slot 1: FREE (was Process 1)\n");
-    serial_puts("    Slot 2: READY (Process 2)\n");
-    serial_puts("    Slot 3: READY (Process 3)\n");
-    serial_puts("    Ready Queue: [2] -> [3]\n");
-    serial_puts("    Current: None (currpid reset)\n\n");
+    /* Test 8: Process termination */
+    int test8_pass = 1;
+    if (terminate_process(p1) != 0)
+        test8_pass = 0;
+    if (is_valid_pid(p1))  // Should be invalid now
+        test8_pass = 0;
+    /* After termination, PID is cleared, so we can't look it up - just check validity */
 
-    serial_puts("--- Process Manager Test Complete ---\n\n");
+    /* Test 9: Ready queue after termination */
+    int test9_pass = (get_num_ready() == 2) ? 1 : 0;
+
+    /* Test 10: Stack allocation verification */
+    int test10_pass = 1;
+    if (get_stack_base(p2) == NULL)
+        test10_pass = 0;
+    if (get_stack_base(p1) != NULL)  // Terminated process should have NULL
+        test10_pass = 0;
+
+    /* Print results */
+    serial_puts("\n========================================\n");
+    serial_puts("    Process Manager Utility Tests\n");
+    serial_puts("========================================\n\n");
+
+    serial_puts("Test 1 (Process Creation): ");
+    serial_puts(test1_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 2 (Process States): ");
+    serial_puts(test2_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 3 (Process Priorities): ");
+    serial_puts(test3_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 4 (Ready Queue Count): ");
+    serial_puts(test4_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 5 (Valid PID Check): ");
+    serial_puts(test5_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 6 (State Transition): ");
+    serial_puts(test6_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 7 (Queue After Transition): ");
+    serial_puts(test7_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 8 (Process Termination): ");
+    serial_puts(test8_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 9 (Queue After Termination): ");
+    serial_puts(test9_pass ? "PASS\n" : "FAIL\n");
+
+    serial_puts("Test 10 (Stack Allocation): ");
+    serial_puts(test10_pass ? "PASS\n" : "FAIL\n");
+
+    /* Overall result */
+    int all_pass = test1_pass && test2_pass && test3_pass && test4_pass && 
+                   test5_pass && test6_pass && test7_pass && test8_pass && 
+                   test9_pass && test10_pass;
+
+    serial_puts("\n");
+    serial_puts(all_pass ? "All tests PASSED!\n" : "Some tests FAILED!\n");
+    serial_puts("========================================\n\n");
 
     /* Running null process */
     serial_puts("Running shell...\n\n");
