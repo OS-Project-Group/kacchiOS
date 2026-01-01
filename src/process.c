@@ -86,6 +86,13 @@ void init_proctab(void)
         proctab[i].prprio = 0;
         proctab[i].prstkptr = NULL;
         proctab[i].prstkbase = NULL;
+        proctab[i].next = -1;
+        
+        // Initialize IPC fields
+        proctab[i].has_msg = 0;
+        proctab[i].sender_pid = -1;
+        proctab[i].msg_inbox.len = 0;
+        proctab[i].msg_inbox.sender_pid = -1;
     }
     next_pid = 1;
     readylist.head = -1;
@@ -123,6 +130,12 @@ pid32 create_process(int priority)
     proctab[i].prstkbase = stkbase;
     proctab[i].prstkptr = stkbase + STACK_PER_PROC - 4; // stack grows down
     proctab[i].next = -1;
+    
+    // Initialize IPC fields
+    proctab[i].has_msg = 0;
+    proctab[i].sender_pid = -1;
+    proctab[i].msg_inbox.len = 0;
+    proctab[i].msg_inbox.sender_pid = -1;
 
     // 4. Enqueue to ready queue
     enqueue_ready(i);
@@ -283,4 +296,74 @@ int get_num_ready(void)
         slot = proctab[slot].next;
     }
     return count;
+}
+
+/* ============= IPC (Inter-Process Communication) ============= */
+
+// Send a message to another process
+// Returns 0 on success, -1 on failure
+int send(pid32 dest_pid, char *message, int len)
+{
+    int dest_slot = find_slot(dest_pid);
+    
+    if (dest_slot == -1)
+        return -1;  // Destination process not found
+    
+    if (message == NULL || len <= 0)
+        return -1;  // Invalid message
+    
+    if (len > MSG_SIZE)
+        len = MSG_SIZE;  // Truncate if too long
+    
+    // Copy message to destination inbox
+    proctab[dest_slot].msg_inbox.sender_pid = currpid;
+    proctab[dest_slot].msg_inbox.len = len;
+    
+    // Copy message data
+    int i;
+    for (i = 0; i < len; i++)
+        proctab[dest_slot].msg_inbox.data[i] = message[i];
+    
+    // Mark that message is available
+    proctab[dest_slot].has_msg = 1;
+    proctab[dest_slot].sender_pid = currpid;
+    
+    return 0;
+}
+
+// Receive a message from another process
+// If src_pid == -1, receive from any sender
+// Returns number of bytes received, -1 on failure
+int receive(pid32 src_pid, char *buffer, int max_len)
+{
+    int my_slot = find_slot(currpid);
+    
+    if (my_slot == -1)
+        return -1;  // Current process not found
+    
+    if (buffer == NULL || max_len <= 0)
+        return -1;  // Invalid buffer
+    
+    // Check if message available
+    if (!proctab[my_slot].has_msg)
+        return -1;  // No message waiting
+    
+    // If src_pid specified, check sender matches
+    if (src_pid != -1 && proctab[my_slot].msg_inbox.sender_pid != src_pid)
+        return -1;  // Message not from requested sender
+    
+    // Copy message to buffer
+    int msg_len = proctab[my_slot].msg_inbox.len;
+    if (msg_len > max_len)
+        msg_len = max_len;  // Truncate to buffer size
+    
+    int i;
+    for (i = 0; i < msg_len; i++)
+        buffer[i] = proctab[my_slot].msg_inbox.data[i];
+    
+    // Clear message
+    proctab[my_slot].has_msg = 0;
+    proctab[my_slot].msg_inbox.len = 0;
+    
+    return msg_len;  // Return bytes received
 }

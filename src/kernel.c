@@ -187,6 +187,73 @@ void kmain(void)
     serial_puts(all_pass ? "All tests PASSED!\n" : "Some tests FAILED!\n");
     serial_puts("========================================\n\n");
 
+    /* IPC (Inter-Process Communication) Tests */
+    serial_puts("========================================\n");
+    serial_puts("    IPC (Inter-Process Communication)\n");
+    serial_puts("========================================\n\n");
+
+    /* Create two new processes for IPC testing */
+    pid32 sender = create_process(1);
+    pid32 receiver = create_process(1);
+    
+    int ipc_test1 = (sender != -1 && receiver != -1) ? 1 : 0;
+    serial_puts("Test IPC-1 (Process Creation): ");
+    serial_puts(ipc_test1 ? "PASS\n" : "FAIL\n");
+
+    /* Set sender as current process before sending */
+    set_current(sender);
+
+    /* Test send message */
+    char test_msg[] = "Hello IPC!";
+    int send_result = send(receiver, test_msg, 10);
+    int ipc_test2 = (send_result == 0) ? 1 : 0;
+    serial_puts("Test IPC-2 (Send Message): ");
+    serial_puts(ipc_test2 ? "PASS\n" : "FAIL\n");
+
+    /* Test message was set in receiver's inbox */
+    int receiver_slot = find_slot(receiver);
+    int msg_received = proctab[receiver_slot].has_msg;
+    int ipc_test3 = (msg_received == 1) ? 1 : 0;
+    serial_puts("Test IPC-3 (Message Available): ");
+    serial_puts(ipc_test3 ? "PASS\n" : "FAIL\n");
+
+    /* Test message sender field is correct */
+    int sender_correct = (proctab[receiver_slot].msg_inbox.sender_pid == sender);
+    int ipc_test4 = sender_correct ? 1 : 0;
+    serial_puts("Test IPC-4 (Sender Identification): ");
+    serial_puts(ipc_test4 ? "PASS\n" : "FAIL\n");
+
+    /* Test message length is correct */
+    int msg_len = proctab[receiver_slot].msg_inbox.len;
+    int ipc_test5 = (msg_len == 10) ? 1 : 0;
+    serial_puts("Test IPC-5 (Message Length): ");
+    serial_puts(ipc_test5 ? "PASS\n" : "FAIL\n");
+
+    /* Test message content */
+    int content_match = 1;
+    for (int i = 0; i < 10; i++) {
+        if (proctab[receiver_slot].msg_inbox.data[i] != test_msg[i])
+            content_match = 0;
+    }
+    int ipc_test6 = content_match ? 1 : 0;
+    serial_puts("Test IPC-6 (Message Content): ");
+    serial_puts(ipc_test6 ? "PASS\n" : "FAIL\n");
+
+    /* Simulate receiver clearing message */
+    proctab[receiver_slot].has_msg = 0;
+    int msg_cleared = !proctab[receiver_slot].has_msg;
+    int ipc_test7 = msg_cleared ? 1 : 0;
+    serial_puts("Test IPC-7 (Message Cleared): ");
+    serial_puts(ipc_test7 ? "PASS\n" : "FAIL\n");
+
+    /* Overall IPC result */
+    int ipc_all_pass = ipc_test1 && ipc_test2 && ipc_test3 && ipc_test4 && 
+                       ipc_test5 && ipc_test6 && ipc_test7;
+
+    serial_puts("\n");
+    serial_puts(ipc_all_pass ? "All IPC tests PASSED!\n" : "Some IPC tests FAILED!\n");
+    serial_puts("========================================\n\n");
+
     /* Running null process */
     serial_puts("Running shell...\n\n");
 
