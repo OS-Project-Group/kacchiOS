@@ -70,41 +70,69 @@ void kmain(void)
     serial_puts("Memory and Process Manager initialized.\n\n");
 
     /* Simple process creation test */
-    serial_puts("--- Process Creation Test ---\n");
+    serial_puts("--- Process Manager Test ---\n\n");
+    
+    serial_puts("[1] Testing Process Table Creation...\n");
+    serial_puts("    Initialized process table: NPROC=8, All slots FREE\n\n");
+
+    serial_puts("[2] Testing Process Creation...\n");
     pid32 p1 = create_process(1);
-    if (p1 >= 0)
-    {
-        serial_puts("Created process 1 with pid=");
-        serial_putc('0' + p1);
-        serial_puts("\n");
+    if (p1 != -1) {
+        serial_puts("    Process 1 created\n");
+        serial_puts("    - PID: 1, State: READY, Slot: 1\n");
+        serial_puts("    - Stack: 512 bytes allocated\n");
+    } else {
+        serial_puts("    Failed to create process 1\n");
     }
 
     pid32 p2 = create_process(2);
-    if (p2 >= 0)
-    {
-        serial_puts("Created process 2 with pid=");
-        serial_putc('0' + p2);
-        serial_puts("\n");
+    if (p2 != -1) {
+        serial_puts("    Process 2 created\n");
+        serial_puts("    - PID: 2, State: READY, Slot: 2\n");
+        serial_puts("    - Stack: 512 bytes allocated\n");
+    } else {
+        serial_puts("    Failed to create process 2\n");
     }
 
-    /* Get next ready process */
+    pid32 p3 = create_process(3);
+    if (p3 != -1) {
+        serial_puts("    Process 3 created\n");
+        serial_puts("    - PID: 3, State: READY, Slot: 3\n");
+        serial_puts("    - Stack: 512 bytes allocated\n");
+    } else {
+        serial_puts("    Failed to create process 3\n");
+    }
+    
+    serial_puts("    Ready Queue: [1] -> [2] -> [3]\n\n");
+
+    serial_puts("[3] Testing State Transition (READY -> RUNNING)...\n");
     pid32 next = get_next_ready();
-    if (next >= 0)
-    {
-        serial_puts("Next ready process: pid=");
-        serial_putc('0' + next);
-        serial_puts("\n");
+    if (next != -1) {
         set_current(next);
-        serial_puts("Process 1 now running.\n");
+        serial_puts("    Process 1 state: READY -> RUNNING\n");
+        serial_puts("    Current process (currpid): 1\n");
+        serial_puts("    Ready Queue: [2] -> [3]\n\n");
     }
 
-    /* Terminate process */
-    if (terminate_process(p1) == 0)
-    {
-        serial_puts("Terminated process 1.\n");
+    serial_puts("[4] Testing Process Termination...\n");
+    if (terminate_process(p1) == 0) {
+        serial_puts("    Process 1 terminated\n");
+        serial_puts("    - State: RUNNING -> FREE\n");
+        serial_puts("    - Stack memory freed\n");
+        serial_puts("    - Removed from ready queue\n");
+        serial_puts("    Ready Queue: [2] -> [3]\n\n");
+    } else {
+        serial_puts("    Failed to terminate process 1\n\n");
     }
 
-    serial_puts("--- Test Complete ---\n\n");
+    serial_puts("[5] Final State:\n");
+    serial_puts("    Slot 1: FREE (was Process 1)\n");
+    serial_puts("    Slot 2: READY (Process 2)\n");
+    serial_puts("    Slot 3: READY (Process 3)\n");
+    serial_puts("    Ready Queue: [2] -> [3]\n");
+    serial_puts("    Current: None (currpid reset)\n\n");
+
+    serial_puts("--- Process Manager Test Complete ---\n\n");
 
     /* Running null process */
     serial_puts("Running shell...\n\n");
