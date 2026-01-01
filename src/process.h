@@ -33,5 +33,6 @@ void init_proctab(void);
 pid32 create_process(int priority);
 int terminate_process(pid32 pid);
 void set_current(pid32 pid);
+pid32 get_next_ready(void);
 
 #endif
