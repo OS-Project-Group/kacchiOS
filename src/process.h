@@ -35,6 +35,14 @@ typedef struct pcb
     char *prstkbase;        // Base of stack
     int next;               // Next process in queue (slot index)
     
+    // Scheduler fields
+    void (*prfunc)(void);   // Process function pointer
+    int prquantum;          // Time quantum allocated
+    int prtime;             // Remaining time in current quantum
+    int original_prio;      // Original priority (for aging)
+    int prwait_time;        // Time spent waiting
+    int prcputime;          // Total CPU time consumed
+    
     // IPC (Inter-Process Communication)
     Message msg_inbox;      // Latest message received
     int has_msg;            // 1 if message available, 0 otherwise
@@ -54,12 +62,18 @@ extern pcb_t proctab[NPROC];
 // Process currently running
 extern pid32 currpid;
 
+// Ready queue (exposed for scheduler)
+extern queue_t readylist;
+
 // Functions - Process Management
 void init_proctab(void);
 pid32 create_process(int priority);
+pid32 create_process_with_func(int priority, void (*func)(void));
 int terminate_process(pid32 pid);
 void set_current(pid32 pid);
 pid32 get_next_ready(void);
+void enqueue_ready(int slot);
+void dequeue_process(int slot);
 
 // Functions - Queue Operations
 void q_insert(int slot, queue_t *q);

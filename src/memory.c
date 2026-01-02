@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "serial.h"
 
 uint8_t stack[STACK_SIZE];
 uint8_t heap[HEAP_SIZE];

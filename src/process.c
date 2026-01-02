@@ -2,6 +2,9 @@
 #include "memory.h"
 #include "serial.h"
 
+/* Forward declaration for process exit handler */
+extern void user_process_exit(void);
+
 // Process Table Creation
 pcb_t proctab[NPROC];
 
@@ -12,7 +15,7 @@ pid32 currpid = -1;
 static pid32 next_pid = 1;
 
 // Ready queue
-static queue_t readylist = {-1, -1};
+queue_t readylist = {-1, -1};
 
 #define STACK_PER_PROC 512 // Process stack size
 
@@ -58,7 +61,7 @@ int q_empty(queue_t *q)
 }
 
 // Enqueue a process to ready list
-static void enqueue_ready(int slot)
+void enqueue_ready(int slot)
 {
     if (slot < 0 || slot >= NPROC)
         return;
@@ -87,6 +90,14 @@ void init_proctab(void)
         proctab[i].prstkptr = NULL;
         proctab[i].prstkbase = NULL;
         proctab[i].next = -1;
+        
+        // Initialize scheduler fields
+        proctab[i].prfunc = NULL;
+        proctab[i].prquantum = 10;  // Default quantum
+        proctab[i].prtime = 10;
+        proctab[i].original_prio = 0;
+        proctab[i].prwait_time = 0;
+        proctab[i].prcputime = 0;
         
         // Initialize IPC fields
         proctab[i].has_msg = 0;
@@ -131,6 +142,14 @@ pid32 create_process(int priority)
     proctab[i].prstkptr = stkbase + STACK_PER_PROC - 4; // stack grows down
     proctab[i].next = -1;
     
+    // Initialize scheduler fields
+    proctab[i].prfunc = NULL;
+    proctab[i].prquantum = 10;  // Default quantum
+    proctab[i].prtime = 10;
+    proctab[i].original_prio = priority;
+    proctab[i].prwait_time = 0;
+    proctab[i].prcputime = 0;
+    
     // Initialize IPC fields
     proctab[i].has_msg = 0;
     proctab[i].sender_pid = -1;
@@ -141,6 +160,106 @@ pid32 create_process(int priority)
     enqueue_ready(i);
 
     return proctab[i].pid;
+}
+
+// Create a new process with a function pointer
+pid32 create_process_with_func(int priority, void (*func)(void))
+{
+    int i;
+    char *stkbase;
+    uint32_t *stkptr;
+
+    // 1. Find a free slot
+    for (i = 0; i < NPROC; i++)
+    {
+        if (proctab[i].prstate == PR_FREE)
+            break;
+    }
+
+    if (i == NPROC)
+        return -1; // No free process slot
+
+    // 2. Allocate kernel stack
+    stkbase = (char *)heap_alloc(STACK_PER_PROC);
+    if (!stkbase)
+        return -1; // Memory allocation failed
+
+    // 3. Initialize stack for context switch
+    // Stack layout for ctxsw: EBX, ESI, EDI, EBP, return_address
+    // ctxsw will pop EBX, ESI, EDI, EBP, then RET to return_address
+    
+    stkptr = (uint32_t *)(stkbase + STACK_PER_PROC);
+    
+    *(--stkptr) = (uint32_t)func;    // Return address (entry point)
+    *(--stkptr) = 0;                 // EBP
+    *(--stkptr) = 0;                 // EDI
+    *(--stkptr) = 0;                 // ESI  
+    *(--stkptr) = 0;                 // EBX
+
+    // 4. Initialize PCB
+    proctab[i].pid = next_pid++;
+    proctab[i].prstate = PR_READY;
+    proctab[i].prprio = priority;
+    proctab[i].prstkbase = stkbase;
+    proctab[i].prstkptr = (char *)stkptr;  // Point to prepared stack
+    proctab[i].next = -1;
+    
+    // Initialize scheduler fields
+    proctab[i].prfunc = func;
+    proctab[i].prquantum = 10;  // Default quantum
+    proctab[i].prtime = 10;
+    proctab[i].original_prio = priority;
+    proctab[i].prwait_time = 0;
+    proctab[i].prcputime = 0;
+    
+    // Initialize IPC fields
+    proctab[i].has_msg = 0;
+    proctab[i].sender_pid = -1;
+    proctab[i].msg_inbox.len = 0;
+    proctab[i].msg_inbox.sender_pid = -1;
+
+    // 5. Enqueue to ready queue
+    enqueue_ready(i);
+
+    return proctab[i].pid;
+}
+
+// Remove a process from ready queue
+void dequeue_process(int slot)
+{
+    int curr, prev;
+    
+    if (slot < 0 || slot >= NPROC)
+        return;
+    
+    // If not in ready state, nothing to dequeue
+    if (proctab[slot].prstate != PR_READY)
+        return;
+    
+    // Search for process in ready queue
+    prev = -1;
+    curr = readylist.head;
+    
+    while (curr != -1) {
+        if (curr == slot) {
+            // Found it - remove from queue
+            if (prev == -1) {
+                // Removing head
+                readylist.head = proctab[curr].next;
+                if (readylist.head == -1)
+                    readylist.tail = -1;
+            } else {
+                // Removing from middle or tail
+                proctab[prev].next = proctab[curr].next;
+                if (curr == readylist.tail)
+                    readylist.tail = prev;
+            }
+            proctab[curr].next = -1;
+            return;
+        }
+        prev = curr;
+        curr = proctab[curr].next;
+    }
 }
 
 // Set a process as currently running
