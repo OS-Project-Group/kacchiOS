@@ -125,6 +125,16 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 3. Follow existing code style
 4. Test changes in QEMU before submitting
 
+## 👥 Contributors
+
+Thanks to all the amazing people who have contributed to kacchiOS! 🎉
+
+<a href="https://github.com/OS-Project-Group/kacchiOS/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=OS-Project-Group/kacchiOS" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
+
 ## 📄 License
 
 This project is licensed under the MIT License.
