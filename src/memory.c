@@ -150,5 +150,4 @@ void stress_test_memory(void) {
     }
 
     serial_puts("--- Stress Test Complete ---\n\n");
-    // Now we will start deallocating from the end of the heap
 }
