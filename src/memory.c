@@ -80,7 +80,7 @@ void* heap_alloc(size_t size) {
 void heap_free(void* ptr) {
     if (!ptr) return;
 
-    // Locate the header exactly like the original code 
+    // Locate the header
     MemBlock* block = (MemBlock*)((uint8_t*)ptr - sizeof(MemBlock));
     block->free = 1;
 
