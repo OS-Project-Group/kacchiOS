@@ -92,7 +92,8 @@ kacchiOS/
 │   ├── io.h            # I/O port operations
 │   ├── link.ld         # Linker script
 │   └── Makefile        # Build system
-├── LICENSE             # MIT License
+├── LICENSE   
+├── Project_Report.pdf          # MIT License
 └── README.md           # This file
 ```
 
